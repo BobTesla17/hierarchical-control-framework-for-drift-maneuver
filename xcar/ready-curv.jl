@@ -1,11 +1,10 @@
 include("RosMsg.jl")
+include("curv-estimator.jl")
 include("pid-struct.jl")
 include("tool-func.jl")
 include("data-struct.jl")
 include("kf.jl")
 include("L1AC.jl")
-#include("curv-estimator.jl")
-include("circle-fit.jl")
 
 using RobotOS
 using ReferenceFrameRotations
@@ -24,22 +23,19 @@ global reference = Reference()
 global vesc = Vesc()
 global ctrl = RosMsg.VescCtrlStamped()
 global tracker = make_tracker()
-#global curv_est = make_curv_estimator(25)
-#est_circle = update!(curv_est, 0., 0., 0., 0., 0.)
-global trace = make_circle_fit(25)
-est_circle = kasa!(trace, 0., 0.)
+global curv_est = make_curv_estimator(25)
+est_circle = update!(curv_est, 0., 0., 0., 0., 0.)
 
 #global l1ac = L1AC_Struct()
 #R_l1ac = L1AC!(l1ac, convert(Float64,1.0), 1.0, 0.10)
 
 function compute_extend_state(s::State)
-    global trace
+    global curv_est
     vx_car = s.vx * cos(s.ψ) + s.vy * sin(s.ψ)
     vy_car = - s.vx * sin(s.ψ) + s.vy * cos(s.ψ)
     β = atan(vy_car, vx_car)
     V = sqrt(s.vx ^ 2 + s.vy ^ 2)
-    #est_circle = update!(curv_est, s.x, s.y, s.vx, s.vy, s.vψ)
-    est_circle = kasa!(trace, s.x, s.y)
+    est_circle = update!(curv_est, s.x, s.y, s.vx, s.vy, s.vψ)
     return ExtendState(β, V, vx_car, vy_car, est_circle.x0, est_circle.y0, est_circle.r)
 end
 

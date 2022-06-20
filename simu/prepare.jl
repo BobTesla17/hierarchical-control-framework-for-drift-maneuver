@@ -180,7 +180,7 @@ end
 
 
 function make_radius_estimator(num_points)
-    est = Model(with_optimizer(Ipopt.Optimizer, print_level=0))
+    est = Model(Ipopt.Optimizer)
     
     # Center as decision variable
     @variable(est, x0, start=0.0)
@@ -206,15 +206,16 @@ function update!(est::Model, new_x::Float64, new_y::Float64)
     x, y = est[:x], est[:y]
     num_points = length(x)
     for i in num_points - 1:-1:1
-        set_value(x[i + 1], value(x[i]))
-        set_value(y[i + 1], value(y[i]))
+        set_value(x[i + 1], value.(x)[i])
+        set_value(y[i + 1], value.(y)[i])
     end
     set_value(x[1], new_x)
     set_value(y[1], new_y)
     optimize!(est)
-    set_start_value(est[:x0], value(est[:x0]))
-    set_start_value(est[:y0], value(est[:y0]))
-    return Circle(value(est[:x0]), value(est[:y0]), value(est[:r]))
+    x0, y0, r = value.(est[:x0]), value.(est[:y0]), value(est[:r])
+    set_start_value(est[:x0], x0)
+    set_start_value(est[:y0], y0)
+    return Circle(x0, y0, r)
 end
 
 (δ_ff_snow, δ_ff_ice) = (0.22997754824975136, 0.211634)
